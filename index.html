@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Bravia Remote</title>
 
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -13,182 +13,62 @@
   <style>
     * { box-sizing: border-box; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
     body {
-      background-color: #ff1493;
-      color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 0; padding: 12px; width: 100vw; min-height: 100vh;
+      background-color: #ff1493; color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 0; padding: calc(12px + env(safe-area-inset-top)) 12px calc(40px + env(safe-area-inset-bottom));
+      width: 100vw; min-height: 100vh;
       display: flex; flex-direction: column; align-items: center;
-      background-size: cover; background-position: center; transition: background 0.3s;
+      background-size: cover; background-position: center; background-attachment: fixed;
     }
     .container { width: 100%; max-width: 380px; }
-
-    .grid { display: grid; gap: 6px; margin-bottom: 8px; }
-    .row-4 { grid-template-columns: repeat(4, 1fr); }
-    .row-3 { grid-template-columns: repeat(3, 1fr); }
-    .row-5 { grid-template-columns: repeat(5, 1fr); }
-
-    /* button の代わりに label.btn を使用(触覚フィードバック用) */
-    .btn {
-      position: relative; cursor: pointer;
-      background: rgba(44, 44, 46, 0.9); color: #fff; border: none; border-radius: 10px;
-      font-size: 14px; font-weight: bold; height: 50px; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.4); backdrop-filter: blur(5px);
-    }
-    .btn:active { background: rgba(85, 85, 85, 0.9) !important; transform: scale(0.96); }
-    /* 触覚用スイッチ: 見えないが存在はしている(display:none にしない) */
-    .btn input[switch] {
-      position: absolute; inset: 0; width: 100%; height: 100%;
-      margin: 0; opacity: 0.01; pointer-events: none;
-    }
-
-    .bg-setting { background: rgba(28, 28, 30, 0.9); color: #aaa; font-size: 12px; }
-    .bg-green { background: rgba(48, 209, 88, 0.9); color: #000; }
-    .bg-red { background: rgba(255, 69, 58, 0.9); }
-    .bg-blue { background: rgba(10, 132, 255, 0.9); }
-    .bg-dark { background: rgba(24, 24, 24, 0.9); color: #64d2ff; }
-    .bg-cyan { background: rgba(28, 28, 30, 0.9); color: #64d2ff; }
-
-    .dpad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0; }
-    .bg-dpad { background: rgba(44, 44, 46, 0.9); font-size: 20px; }
-    .bg-confirm { background: rgba(58, 58, 60, 0.9); }
-
-    .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
-    .btn-blue { background: #0a84ff; height: 26px; }
-    .btn-red { background: #ff453a; height: 26px; }
-    .btn-green { background: #30d158; height: 26px; }
-    .btn-yellow { background: #ffd60a; height: 26px; }
-
+    .grid { display: grid; gap: 6px; margin-bottom: 6px; }
+    .g4 { grid-template-columns: repeat(4, 1fr); }
+    .g3 { grid-template-columns: repeat(3, 1fr); }
+    .dpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0 14px; }
+    .vol-wrap { display: grid; grid-template-columns: 210fr 142fr; gap: 14px; margin-bottom: 6px; }
+    .vol-wrap .lbl { text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 4px; }
+    .vol-l { display: grid; grid-template-columns: 60fr 72fr 72fr; gap: 4px; }
+    .vol-r { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+    .colors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 6px 0 12px; }
     .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
-    .numpad .btn { height: 44px; }
 
-    .shortcut-btn { background: rgba(28, 28, 30, 0.9); color: #888; font-size: 13px; }
+    .btn {
+      position: relative; cursor: pointer; text-align: center; line-height: 1.2;
+      background: #2c2c2e; color: #fff; border-radius: 10px; font-weight: bold;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4); overflow: hidden;
+    }
+    .btn:active { filter: brightness(1.6); transform: scale(0.96); }
+    .btn input[switch] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0.01; pointer-events: none; }
+    .btn img { max-height: 90%; max-width: 90%; border-radius: 8px; }
 
-    /* モーダル表示 */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000;
-    }
-    .modal-content {
-      background: #1c1c1e; color: #fff; padding: 20px; border-radius: 14px; width: 85%; max-width: 340px;
-      display: flex; flex-direction: column; gap: 12px; border: 1px solid #333;
-    }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 1000; }
+    .modal-content { background: #1c1c1e; color: #fff; padding: 20px; border-radius: 14px; width: 85%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; border: 1px solid #333; max-height: 85vh; }
     .modal-content h3 { margin: 0; font-size: 16px; text-align: center; }
-    .modal-content input[type="text"] {
+    .modal-content p { margin: 0; font-size: 13px; color: #aaa; text-align: center; white-space: pre-line; }
+    .modal-content .btn { height: 44px; font-size: 14px; background: #2c2c2e; }
+    .modal-content input[type="text"], .modal-content input[type="password"] {
       background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; font-size: 16px; text-align: center;
-      user-select: text; -webkit-user-select: text;
+      user-select: text; -webkit-user-select: text; width: 100%;
     }
-    .modal-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-    .modal-list .btn { height: 40px; font-size: 13px; background: #2c2c2e; text-align: left; padding: 0 12px; justify-content: flex-start; }
+    .modal-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; max-height: 300px; }
+    .modal-list .btn { height: 40px; font-size: 13px; justify-content: flex-start; padding: 0 12px; text-align: left; }
+    #toast { position: fixed; left: 50%; bottom: calc(40px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+      background: rgba(0,0,0,0.85); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 13px; z-index: 2000;
+      display: none; max-width: 90%; text-align: center; }
   </style>
 </head>
 <body>
-
-<div class="container">
-  <!-- 1. 最上部 -->
-  <div class="grid row-4">
-    <label class="btn bg-setting" data-fn="openSettings">≡ アプリ設定<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="TERRESTRIAL">地デジ<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="BS_CS">BS/CS<input type="checkbox" switch></label>
-    <label class="btn bg-red" data-cmd="POWER">電源<input type="checkbox" switch></label>
-  </div>
-
-  <!-- 2. 十字キー -->
-  <div class="dpad-grid">
-    <div></div><label class="btn bg-dpad" data-cmd="UP">▲<input type="checkbox" switch></label><div></div>
-    <label class="btn bg-dpad" data-cmd="LEFT">◄<input type="checkbox" switch></label>
-    <label class="btn bg-confirm" data-cmd="SELECT">◆ 決定<input type="checkbox" switch></label>
-    <label class="btn bg-dpad" data-cmd="RIGHT">►<input type="checkbox" switch></label>
-    <div></div><label class="btn bg-dpad" data-cmd="DOWN">▼<input type="checkbox" switch></label><div></div>
-  </div>
-
-  <!-- 3. 音量 & チャンネル -->
-  <div class="grid row-5">
-    <label class="btn bg-setting" data-cmd="MUTE">消音<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="VOL_DOWN">音ー<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="VOL_UP">音＋<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="CH_DOWN">CHー<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="CH_UP">CH＋<input type="checkbox" switch></label>
-  </div>
-
-  <!-- 4. 戻る / テレビ / ホーム -->
-  <div class="grid row-3">
-    <label class="btn bg-cyan" data-cmd="BACK">戻る<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="TV">テレビ<input type="checkbox" switch></label>
-    <label class="btn bg-dark" data-cmd="HOME">ホーム<input type="checkbox" switch></label>
-  </div>
-
-  <!-- 5. 入力切換 / 番組表 / メニュー -->
-  <div class="grid row-3">
-    <label class="btn" data-cmd="INPUT">入力切換<input type="checkbox" switch></label>
-    <label class="btn bg-blue" data-cmd="EPG">番組表<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="MENU">メニュー<input type="checkbox" switch></label>
-  </div>
-
-  <!-- アプリショートカット (3枠) : JSで描画 -->
-  <div class="grid row-3" id="shortcutContainer"></div>
-
-  <!-- 6. カラーボタン -->
-  <div class="color-grid">
-    <label class="btn btn-blue" data-cmd="BLUE"><input type="checkbox" switch></label>
-    <label class="btn btn-red" data-cmd="RED"><input type="checkbox" switch></label>
-    <label class="btn btn-green" data-cmd="GREEN"><input type="checkbox" switch></label>
-    <label class="btn btn-yellow" data-cmd="YELLOW"><input type="checkbox" switch></label>
-  </div>
-
-  <!-- 7. テンキー -->
-  <div class="numpad">
-    <label class="btn" data-cmd="NUM_1">1<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_2">2<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_3">3<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_4">4<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_5">5<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_6">6<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_7">7<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_8">8<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_9">9<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_10">10<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_11">11<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="NUM_12">12<input type="checkbox" switch></label>
-  </div>
-
-  <!-- 8. メディアコントロール -->
-  <div class="grid row-3">
-    <label class="btn" data-cmd="AUDIO_SELECT">音声切換<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="SUBTITLE">字幕<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="RECORDER_HOME">レコーダー<input type="checkbox" switch></label>
-  </div>
-  <div class="grid row-3">
-    <label class="btn" data-cmd="REWIND">◄◄ 早戻し<input type="checkbox" switch></label>
-    <label class="btn bg-green" data-cmd="PLAY">► 再生<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="FF">早送り ►►<input type="checkbox" switch></label>
-  </div>
-  <div class="grid row-3">
-    <label class="btn bg-confirm" data-cmd="DATA">d (データ)<input type="checkbox" switch></label>
-    <label class="btn bg-red" data-cmd="STOP">■ 停止<input type="checkbox" switch></label>
-    <label class="btn" data-cmd="REC_LIST">録画リスト<input type="checkbox" switch></label>
-  </div>
-</div>
-
-<!-- ダイアログ用モーダル構造 -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal-content" id="modalContent"></div>
-</div>
-
+<div class="container" id="app"></div>
+<div class="modal-overlay" id="modalOverlay"><div class="modal-content" id="modalContent"></div></div>
+<div id="toast"></div>
 <input type="file" id="bgFileInput" accept="image/*" style="display:none" onchange="handleImageSelect(event)">
 
 <script>
-  // --------------------------------------------------
-  // データ保存・設定定義
-  // --------------------------------------------------
-  let braviaIP = localStorage.getItem('bravia_ip') || "192.168.1.128";
-  let authCookie = localStorage.getItem('bravia_auth_cookie') || "";
-  let customBg = localStorage.getItem('bravia_custom_bg') || "";
-  let currentTheme = localStorage.getItem('bravia_theme') || "ビビッドピンク";
-  let appList = [];
-
-  let shortcuts = JSON.parse(localStorage.getItem('bravia_shortcuts') || JSON.stringify([
-    {title: "未設定", uri: ""}, {title: "未設定", uri: ""}, {title: "未設定", uri: ""}
-  ]));
-
+  // ==================================================
+  // 設定・保存データ
+  // ==================================================
+  const DEFAULT_IP = "192.168.1.128";
   const THEMES = {
     '漆黒ブラック': ['#000000', '#0a0a0a'],
     'ビビッドピンク': ['#ff1493', '#c71585'],
@@ -201,8 +81,53 @@
     'ディープネイビー': ['#0f2027', '#050d1a'],
     'ダークグレー': ['#2c3e50', '#1a252f']
   };
+  const EMPTY_SC = () => ({title: "未設定", uri: "", icon_url: ""});
 
+  function loadJSON(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch { return def; } }
+  function saveJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } }
+
+  let cfg = Object.assign({theme: 'ビビッドピンク', psk: '', ip: ''}, loadJSON('bravia_settings', {}));
+  let AUTH = null;                         // {ip, pin, paired}
+  let BRAVIA_IP = cfg.ip || DEFAULT_IP;
+  let AVAILABLE_CODES = {};
+  let customBg = localStorage.getItem('bravia_bg') || "";
+  let appList = [];
+
+  let CLIENT_ID = localStorage.getItem('bravia_client_id');
+  if (!CLIENT_ID) {
+    CLIENT_ID = 'PWARemote:' + (100 + Math.floor(Math.random() * 900));
+    localStorage.setItem('bravia_client_id', CLIENT_ID);
+  }
+
+  function saveCfg() { saveJSON('bravia_settings', cfg); }
+  function loadShortcuts() {
+    let d = loadJSON('bravia_apps', null);
+    if (!Array.isArray(d) || !d.length) d = [];
+    while (d.length < 3) d.push(EMPTY_SC());
+    return d.slice(0, 3);
+  }
+  function saveShortcuts(s) { saveJSON('bravia_apps', s); }
+
+  // Python版 KEY_MAPPING(名前候補リスト)
   const KEY_MAPPING = {
+    'INPUT': ['Input','TvInput'], 'MENU': ['ActionMenu','Options'], 'POWER': ['TvPower','PowerOff','Power'],
+    'UP': ['Up'], 'DOWN': ['Down'], 'LEFT': ['Left'], 'RIGHT': ['Right'],
+    'SELECT': ['Confirm','OK'], 'BACK': ['Return','Back'], 'HOME': ['Home'],
+    'TV': ['Tv','TvPower','Digital'], 'TERRESTRIAL': ['Digital','Tv'], 'BS_CS': ['BS','BSCS','CS'],
+    'MUTE': ['Mute'], 'VOL_UP': ['VolumeUp'], 'VOL_DOWN': ['VolumeDown'],
+    'CH_UP': ['ChannelUp'], 'CH_DOWN': ['ChannelDown'],
+    'NUM_1': ['Num1'], 'NUM_2': ['Num2'], 'NUM_3': ['Num3'], 'NUM_4': ['Num4'], 'NUM_5': ['Num5'],
+    'NUM_6': ['Num6'], 'NUM_7': ['Num7'], 'NUM_8': ['Num8'], 'NUM_9': ['Num9'],
+    'NUM_10': ['Num0','Num10'], 'NUM_11': ['Num11'], 'NUM_12': ['Num12'],
+    'BLUE': ['Blue'], 'RED': ['Red'], 'GREEN': ['Green'], 'YELLOW': ['Yellow'],
+    'DATA': ['Ddata','GGuide','Data'], 'AUDIO_SELECT': ['Audio','AudioSelect','AudioChange'],
+    'SUBTITLE': ['Subtitle','SubTitle'], 'RECORDER_HOME': ['BraviaSyncMenu','SyncMenu','Media'],
+    'REWIND': ['Rewind'], 'PLAY': ['Play'], 'FF': ['Forward','FastForward'],
+    'PREV': ['Prev','Previous'], 'PAUSE': ['Pause'], 'NEXT': ['Next'], 'STOP': ['Stop']
+  };
+
+  // テレビからコード一覧を取得できない場合の退避用(旧HTML版の固定コード)
+  const FALLBACK_CODES = {
     'POWER':'AAAAAQAAAAEAAAAVAw==','INPUT':'AAAAAQAAAAEAAAAlAw==','TERRESTRIAL':'AAAAAgAAAJcAAAANAw==','BS_CS':'AAAAAgAAAJcAAAAPAw==',
     'UP':'AAAAAQAAAAEAAAB0Aw==','DOWN':'AAAAAQAAAAEAAAB1Aw==','LEFT':'AAAAAQAAAAEAAAA0Aw==','RIGHT':'AAAAAQAAAAEAAAAzAw==','SELECT':'AAAAAQAAAAEAAABlAw==',
     'VOL_UP':'AAAAAQAAAAEAAAASAw==','VOL_DOWN':'AAAAAQAAAAEAAAATAw==','MUTE':'AAAAAQAAAAEAAAAUAw==',
@@ -219,261 +144,434 @@
     'DATA':'AAAAAgAAAJcAAAAnAw==','STOP':'AAAAAgAAAJcAAAAdAw=='
   };
 
-  // --------------------------------------------------
-  // 触覚フィードバック(iOSはスイッチの実タップで発生)
-  // --------------------------------------------------
-  // 全ての label.btn 内のスイッチ変化をここで一括処理する
+  // ==================================================
+  // UI部品: 触覚フィードバック(label + switch)
+  // ==================================================
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
   document.addEventListener('change', (e) => {
     const sw = e.target;
     if (!(sw instanceof HTMLInputElement) || !sw.hasAttribute('switch')) return;
     const btn = sw.closest('.btn');
     if (!btn) return;
-
-    // Android 等: Vibration API
     if (navigator.vibrate) navigator.vibrate(40);
-
-    if (btn.dataset.cmd) {
-      handleBtn(btn.dataset.cmd);
-    } else if (btn.dataset.fn && typeof window[btn.dataset.fn] === 'function') {
-      const args = btn.dataset.args ? JSON.parse(btn.dataset.args) : [];
-      window[btn.dataset.fn](...args);
+    if (btn.dataset.cmd) handleBtnPress(btn.dataset.cmd);
+    else if (btn.dataset.fn && typeof window[btn.dataset.fn] === 'function') {
+      window[btn.dataset.fn](...(btn.dataset.args ? JSON.parse(btn.dataset.args) : []));
     }
   });
 
-  // HTML エスケープ(属性値用)
-  function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // リモコンボタン生成
+  function RB(cmd, text, o = {}) {
+    const st = `background:${o.bg || '#2c2c2e'};color:${o.c || '#fff'};font-size:${o.fs || 15}px;height:${o.h || 54}px;` + (o.extra || '');
+    return `<label class="btn" data-cmd="${cmd}" style="${st}">${text}<input type="checkbox" switch></label>`;
   }
-
-  // モーダル用ボタン生成: mb('関数名', [引数...], '表示文字', '追加クラス')
-  function mb(fn, args, text, cls) {
-    return `<label class="btn ${cls || ''}" data-fn="${fn}" data-args="${esc(JSON.stringify(args || []))}">${esc(text)}<input type="checkbox" switch></label>`;
+  // 関数呼び出しボタン生成(モーダル等)
+  function mb(fn, args, text, cls, style) {
+    return `<label class="btn ${cls || ''}" ${style ? `style="${style}"` : ''} data-fn="${fn}" data-args="${esc(JSON.stringify(args || []))}">${esc(text)}<input type="checkbox" switch></label>`;
   }
+  // クロージャ登録型ボタン
+  let _cb = 0; const CB = {};
+  function runCb(id, ...a) { if (CB[id]) CB[id](...a); }
+  function B(text, f, cls) { const id = ++_cb; CB[id] = f; return mb('runCb', [id], text, cls); }
 
-  // 初期ロード時
-  window.onload = () => {
-    applyTheme(currentTheme);
-    renderShortcuts();
-  };
-
+  // ==================================================
+  // ダイアログ(dialogs 相当)
+  // ==================================================
+  function showModal(html) { document.getElementById('modalContent').innerHTML = html; document.getElementById('modalOverlay').style.display = 'flex'; }
+  function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.style.display = 'block';
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = 'none', 2200);
+  }
+  function dlgAlert(title, msg, onOk) {
+    showModal(`<h3>${esc(title)}</h3><p>${esc(msg)}</p>${B('OK', () => { closeModal(); onOk && onOk(); })}`);
+  }
+  function dlgList(title, items, onPick, onCancel) {
+    const list = items.map((t, i) => B(t, () => { closeModal(); onPick(i); })).join('');
+    showModal(`<h3>${esc(title)}</h3><div class="modal-list">${list}</div>${B('キャンセル', () => { closeModal(); onCancel && onCancel(); })}`);
+  }
+  function dlgInput(title, msg, value, okText, onOk, onCancel, type) {
+    showModal(`<h3>${esc(title)}</h3><p>${esc(msg)}</p><input type="${type || 'text'}" id="dlgInput" value="${esc(value)}">` +
+      B(okText, () => { const v = document.getElementById('dlgInput').value.trim(); closeModal(); onOk(v); }) +
+      B('キャンセル', () => { closeModal(); onCancel && onCancel(); }));
+  }
   function showNetworkError() {
-    showModal(`
-      <h3>接続エラー</h3>
-      <p style="font-size:13px; color:#aaa; text-align:center;">テレビとスマホが同じ Wi-Fi に接続されていないか、テレビの電源が入っていません。<br>ネットワークを確認してください。</p>
-      ${mb('closeModal', [], 'OK')}
-    `);
+    dlgAlert("接続エラー", "テレビとスマホが同じ Wi-Fi に接続されていないか、テレビの電源が入っていません。\nネットワークを確認してください。");
   }
 
-  function applyTheme(themeName) {
-    currentTheme = themeName;
-    localStorage.setItem('bravia_theme', themeName);
-    if (customBg) {
-      document.body.style.backgroundImage = `url(${customBg})`;
-    } else {
-      document.body.style.backgroundImage = 'none';
-      const colors = THEMES[themeName] || THEMES['ビビッドピンク'];
-      document.body.style.backgroundColor = colors[0];
+  // ==================================================
+  // 通信層
+  // ==================================================
+  async function fetchT(url, opts, ms) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms);
+    try { return await fetch(url, Object.assign({}, opts, {signal: c.signal})); }
+    finally { clearTimeout(t); }
+  }
+  function authHeaders() { return cfg.psk ? {'X-Auth-PSK': cfg.psk} : {}; }
+  function credMode() { return cfg.psk ? 'omit' : 'include'; }
+  function isAuthed() { return !!cfg.psk || !!(AUTH && AUTH.paired); }
+
+  function api(service, method, params, ms) {
+    return fetchT(`http://${BRAVIA_IP}/sony/${service}`, {
+      method: 'POST',
+      headers: Object.assign({'Content-Type': 'application/json'}, authHeaders()),
+      body: JSON.stringify({method, params: params || [], id: 1, version: '1.0'}),
+      credentials: credMode()
+    }, ms);
+  }
+
+  async function checkIpAlive(ip) {
+    try { await fetchT(`http://${ip}/sony/system`, {mode: 'no-cors'}, 1500); return true; }
+    catch { return false; }
+  }
+
+  // SSDP の代替: 同一 /24 サブネットを走査
+  async function probeBravia(ip) {
+    try {
+      const r = await fetchT(`http://${ip}/sony/system`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({method: 'getRemoteControllerInfo', params: [], id: 1, version: '1.0'})
+      }, 1200);
+      return r.ok;
+    } catch { return false; }
+  }
+  async function discoverBravia(baseIp) {
+    const prefix = (baseIp || DEFAULT_IP).split('.').slice(0, 3).join('.');
+    let found = null, idx = 1;
+    async function worker() {
+      while (!found && idx <= 254) {
+        const ip = `${prefix}.${idx++}`;
+        if (await probeBravia(ip)) found = ip;
+      }
     }
+    await Promise.all(Array.from({length: 30}, worker));
+    return found;
+  }
+
+  function askPin(ip) {
+    return new Promise(res => dlgInput('BRAVIAペアリング', `テレビ(${ip})の4桁PINを入力してください:`, '', '送信',
+      v => res(v || null), () => res(null)));
+  }
+
+  async function registerPin(ip) {
+    const payload = {
+      method: 'actRegister',
+      params: [{clientid: CLIENT_ID, nickname: 'iPhone Remote'},
+               [{clientid: CLIENT_ID, value: 'yes', nickname: 'iPhone Remote', function: 'WOL'}]],
+      id: 1, version: '1.0'
+    };
+    const post = (extra) => fetchT(`http://${ip}/sony/accessControl`, {
+      method: 'POST', headers: Object.assign({'Content-Type': 'application/json'}, extra || {}),
+      body: JSON.stringify(payload), credentials: 'include'
+    }, 5000);
+    try {
+      const res = await post();
+      if (res.status === 200) { const a = {ip, pin: '', paired: true}; saveJSON('bravia_auth', a); return a; }
+      if (res.status === 401) {
+        const pin = await askPin(ip);
+        if (!pin) return null;
+        const r2 = await post({Authorization: 'Basic ' + btoa(':' + pin)});
+        if (r2.status === 200) { const a = {ip, pin, paired: true}; saveJSON('bravia_auth', a); return a; }
+      }
+    } catch (e) { console.log('接続エラー', e); }
+    return null;
+  }
+
+  async function getAuth() {
+    const saved = loadJSON('bravia_auth', null);
+    const savedIp = (saved && saved.ip) || cfg.ip || DEFAULT_IP;
+    if (saved && saved.paired && await checkIpAlive(savedIp)) { BRAVIA_IP = savedIp; return saved; }
+
+    toast('テレビを検索中...');
+    const found = await discoverBravia(savedIp);
+    BRAVIA_IP = found || savedIp;
+    if (found && saved) { saved.ip = found; saveJSON('bravia_auth', saved); return saved; }
+
+    const auth = await registerPin(BRAVIA_IP);
+    if (!auth) showNetworkError();
+    return auth;
+  }
+
+  async function fetchSupportedCodes() {
+    if (!isAuthed()) return;
+    try {
+      const res = await api('system', 'getRemoteControllerInfo', [], 5000);
+      if (res.ok) {
+        const data = await res.json();
+        const results = data.result || [];
+        if (results.length > 1) results[1].forEach(it => { AVAILABLE_CODES[it.name] = it.value; });
+      }
+    } catch (e) { console.log('Error', e); }
+  }
+
+  async function sendIRCCRaw(code) {
+    if (!isAuthed()) { showNetworkError(); return; }
+    const body = `<?xml version="1.0"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1"><IRCCCode>${code}</IRCCCode></u:X_SendIRCC></s:Body></s:Envelope>`;
+    try {
+      const res = await fetchT(`http://${BRAVIA_IP}/sony/IRCC`, {
+        method: 'POST',
+        headers: Object.assign({'Content-Type': 'text/xml; charset=UTF-8', 'SOAPACTION': '"urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"'}, authHeaders()),
+        body, credentials: credMode()
+      }, 2000);
+      if (!res.ok) showNetworkError();
+    } catch { showNetworkError(); }
+  }
+
+  async function sendIRCCByName(cmd, names) {
+    if (!Object.keys(AVAILABLE_CODES).length) await fetchSupportedCodes();
+    for (const n of names) {
+      if (AVAILABLE_CODES[n]) { sendIRCCRaw(AVAILABLE_CODES[n]); return true; }
+    }
+    if (!Object.keys(AVAILABLE_CODES).length && FALLBACK_CODES[cmd]) { sendIRCCRaw(FALLBACK_CODES[cmd]); return true; }
+    toast('このテレビに該当するキーがありません');
+    return false;
+  }
+
+  async function openEpg() {
+    const ok = await sendIRCCByName('EPG', ['EPG','Epg','TvGuide','Guide']);
+    if (!ok) sendIRCCRaw('AAAAAgAAAKAAAABbAw==');
+  }
+
+  async function launchAppByUri(uri) {
+    if (!isAuthed()) { showNetworkError(); return; }
+    try {
+      const res = await api('appControl', 'setActiveApp', [{uri}], 3000);
+      if (!res.ok) showNetworkError();
+    } catch { showNetworkError(); }
+  }
+
+  async function fetchInstalledApps() {
+    if (!isAuthed()) return [];
+    try {
+      const res = await api('appControl', 'getApplicationList', [], 4000);
+      if (res.ok) { const d = await res.json(); const r = d.result || []; if (r.length) return r[0]; }
+    } catch (e) { console.log('App fetch error', e); }
+    return [];
+  }
+
+  function handleBtnPress(cmd) {
+    if (cmd === 'EPG') openEpg();
+    else if (cmd === 'REC_LIST') launchAppByUri("com.sony.dtv.com.sony.dtv.recapp.com.sony.dtv.recapp.MainActivityIcon");
+    else if (KEY_MAPPING[cmd]) sendIRCCByName(cmd, KEY_MAPPING[cmd]);
+  }
+
+  // ==================================================
+  // 画面描画
+  // ==================================================
+  function renderApp() {
+    const num = [['1','NUM_1'],['2','NUM_2'],['3','NUM_3'],['4','NUM_4'],['5','NUM_5'],['6','NUM_6'],
+                 ['7','NUM_7'],['8','NUM_8'],['9','NUM_9'],['10','NUM_10'],['11','NUM_11'],['12','NUM_12']];
+    document.getElementById('app').innerHTML = `
+      <div class="grid g4">
+        ${mb('openSettings', [], '≡ アプリ設定', '', 'background:#1c1c1e;color:#aaa;font-size:13px;height:56px')}
+        ${RB('TERRESTRIAL','地デジ',{h:56})}${RB('BS_CS','BS/CS',{h:56})}${RB('POWER','電源',{h:56,bg:'#30d158'})}
+      </div>
+      <div class="dpad">
+        <div></div>${RB('UP','▲',{h:62,fs:22})}<div></div>
+        ${RB('LEFT','◄',{h:62,fs:22})}${RB('SELECT','◆ 決定',{h:62,bg:'#3a3a3c'})}${RB('RIGHT','►',{h:62,fs:22})}
+        <div></div>${RB('DOWN','▼',{h:62,fs:22})}<div></div>
+      </div>
+      <div class="vol-wrap">
+        <div><div class="lbl">音量</div><div class="vol-l">
+          ${RB('MUTE','消音',{bg:'#1c1c1e',fs:13})}${RB('VOL_DOWN','ー',{fs:20})}${RB('VOL_UP','+',{fs:20})}
+        </div></div>
+        <div><div class="lbl">チャンネル</div><div class="vol-r">
+          ${RB('CH_DOWN','ー',{fs:18})}${RB('CH_UP','+',{fs:18})}
+        </div></div>
+      </div>
+      <div class="grid g3">
+        ${RB('BACK','戻る',{bg:'#1c1c1e',c:'#64d2ff'})}${RB('TV','テレビ')}${RB('HOME','ホーム',{bg:'#181818',c:'#64d2ff'})}
+      </div>
+      <div class="grid g3">
+        ${RB('INPUT','入力切換')}${RB('EPG','番組表',{bg:'#0a84ff'})}${RB('MENU','メニュー')}
+      </div>
+      <div class="grid g3" id="shortcutContainer"></div>
+      <div class="colors">
+        ${RB('BLUE','',{bg:'#0a84ff',h:24})}${RB('RED','',{bg:'#ff453a',h:24})}
+        ${RB('GREEN','',{bg:'#30d158',h:24})}${RB('YELLOW','',{bg:'#ffd60a',h:24})}
+      </div>
+      <div class="numpad">${num.map(([l, c]) => RB(c, l, {h:44})).join('')}</div>
+      <div class="grid g3">
+        ${RB('AUDIO_SELECT','音声切換',{h:44,fs:13})}${RB('SUBTITLE','字幕',{h:44,fs:13})}${RB('RECORDER_HOME','レコーダー<br>ホーム',{h:44,fs:13})}
+      </div>
+      <div class="grid g3">
+        ${RB('REWIND','◄◄ 早戻し',{h:46,fs:13})}${RB('PLAY','► 再生',{h:46,bg:'#30d158'})}${RB('FF','早送り ►►',{h:46,fs:13})}
+      </div>
+      <div class="grid g3">
+        ${RB('PREV','|◄ 前',{h:46,fs:13})}${RB('PAUSE','❚❚ 一時停止',{h:46,fs:13})}${RB('NEXT','次 ►|',{h:46,fs:13})}
+      </div>
+      <div class="grid g3">
+        ${RB('DATA','d (データ)',{h:46,fs:13,bg:'#3a3a3c'})}${RB('STOP','■ 停止',{h:46,fs:13,bg:'#ff453a'})}${RB('REC_LIST','録画リスト',{h:46,fs:13})}
+      </div>`;
+    renderShortcuts();
+  }
+
+  function iconFail(img) {
+    const s = document.createElement('span');
+    s.textContent = img.alt; s.style.fontSize = '14px';
+    img.replaceWith(s);
   }
 
   function renderShortcuts() {
-    const container = document.getElementById('shortcutContainer');
-    container.innerHTML = shortcuts.map((item, idx) => {
+    const sc = loadShortcuts();
+    document.getElementById('shortcutContainer').innerHTML = sc.map((item, i) => {
       const title = item.title || '未設定';
+      const inner = item.icon_url
+        ? `<img src="${esc(item.icon_url)}" alt="${esc(title)}" onerror="iconFail(this)">`
+        : esc(title);
       const color = title === '未設定' ? '#888' : '#fff';
-      return `<label class="btn shortcut-btn" style="color:${color}" data-fn="onShortcutClick" data-args="[${idx}]">${esc(title)}<input type="checkbox" switch></label>`;
+      return `<label class="btn" style="background:#1c1c1e;color:${color};font-size:14px;height:54px;border-radius:12px" data-fn="onShortcutClick" data-args="[${i}]">${inner}<input type="checkbox" switch></label>`;
     }).join('');
   }
 
-  // --------------------------------------------------
-  // 通信 & コマンド送信
-  // --------------------------------------------------
-  function handleBtn(cmd) {
-    if (cmd === 'REC_LIST') {
-      launchAppByUri("com.sony.dtv.com.sony.dtv.recapp.com.sony.dtv.recapp.MainActivityIcon");
+  function onShortcutClick(idx) {
+    const item = loadShortcuts()[idx];
+    if (item && item.uri) launchAppByUri(item.uri); else selectAppForSlot(idx);
+  }
+
+  function applyTheme() {
+    const colors = THEMES[cfg.theme] || THEMES['ビビッドピンク'];
+    if (customBg) {
+      document.body.style.backgroundColor = '#000000';
+      document.body.style.backgroundImage = `url(${customBg})`;
+    } else {
+      document.body.style.backgroundImage = 'none';
+      document.body.style.backgroundColor = colors[1];   // Python版: スクロール面の色
+    }
+  }
+
+  // ==================================================
+  // 設定メニュー
+  // ==================================================
+  function openSettings() {
+    const opts = [
+      ["📱 アプリショートカットボタン変更", changeShortcuts],
+      ["🖼 写真から背景画像を選択", () => document.getElementById('bgFileInput').click()]
+    ];
+    if (customBg) opts.push(["🗑 カスタム背景画像を削除", deleteCustomBg]);
+    opts.push(
+      ["🎨 カラーテーマに変更", changeTheme],
+      ["🌐 IPアドレスを手動変更", changeIp],
+      ["🔑 ペアリング情報の初期化", resetPairing],
+      ["🔍 テレビを自動検索", manualDiscover],
+      ["🔐 事前共有キー(PSK)設定", setPsk]
+    );
+    dlgList(`アプリ設定 (IP: ${BRAVIA_IP})`, opts.map(o => o[0]), i => opts[i][1]());
+  }
+
+  function changeShortcuts() {
+    const sc = loadShortcuts();
+    dlgList("変更するアプリボタンを選択", sc.map((s, i) => `ボタン${i + 1}: ${s.title}`), i => selectAppForSlot(i), openSettings);
+  }
+
+  async function selectAppForSlot(slot) {
+    toast("テレビからアプリ一覧を取得中...");
+    const apps = await fetchInstalledApps();
+    if (!apps.length) {
+      dlgAlert("取得失敗", "テレビからアプリ一覧を取得できませんでした。\nWi-Fi接続を確認してください。");
       return;
     }
-    const code = KEY_MAPPING[cmd];
-    if (code) sendIRCC(code);
-  }
-
-  function sendIRCC(code) {
-    const url = `http://${braviaIP}/sony/IRCC`;
-    const xmlData = `<?xml version="1.0"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1"><IRCCCode>${code}</IRCCCode></u:X_SendIRCC></s:Body></s:Envelope>`;
-
-    fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/xml; charset=UTF-8",
-        "SOAPACTION": '"urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"'
-      },
-      body: xmlData,
-      mode: "no-cors"
-    }).catch(() => showNetworkError());
-  }
-
-  function launchAppByUri(targetUri) {
-    const url = `http://${braviaIP}/sony/appControl`;
-    const payload = {"method": "setActiveApp", "params": [{"uri": targetUri}], "id": 1, "version": "1.0"};
-    fetch(url, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload),
-      mode: "no-cors"
-    }).catch(() => showNetworkError());
-  }
-
-  // --------------------------------------------------
-  // アプリ設定モーダル & ショートカット機能
-  // --------------------------------------------------
-  function openSettings() {
-    const bgDeleteOpt = customBg ? mb('deleteCustomBg', [], '🗑 カスタム背景画像を削除') : '';
-    showModal(`
-      <h3>アプリ設定 (IP: ${esc(braviaIP)})</h3>
-      <div class="modal-list">
-        ${mb('openShortcutSelector', [], '📱 アプリショートカットボタン変更')}
-        ${mb('pickBgFile', [], '🖼 写真から背景画像を選択')}
-        ${bgDeleteOpt}
-        ${mb('openThemeSelector', [], '🎨 カラーテーマに変更')}
-        ${mb('openIpChange', [], '🌐 IPアドレスを手動変更')}
-        ${mb('clearAuth', [], '🔑 ペアリング情報の初期化')}
-      </div>
-      ${mb('closeModal', [], 'キャンセル')}
-    `);
-  }
-
-  function pickBgFile() {
-    document.getElementById('bgFileInput').click();
-  }
-
-  function onShortcutClick(idx) {
-    const item = shortcuts[idx];
-    if (item && item.uri) {
-      launchAppByUri(item.uri);
-    } else {
-      selectAppForSlot(idx);
-    }
-  }
-
-  function openShortcutSelector() {
-    showModal(`
-      <h3>変更するボタンを選択</h3>
-      <div class="modal-list">
-        ${mb('selectAppForSlot', [0], 'ボタン1: ' + shortcuts[0].title)}
-        ${mb('selectAppForSlot', [1], 'ボタン2: ' + shortcuts[1].title)}
-        ${mb('selectAppForSlot', [2], 'ボタン3: ' + shortcuts[2].title)}
-      </div>
-      ${mb('openSettings', [], '戻る')}
-    `);
-  }
-
-  function selectAppForSlot(slotIdx) {
-    showModal(`<h3>アプリ一覧取得中...</h3>`);
-    const url = `http://${braviaIP}/sony/appControl`;
-    const payload = {"method": "getApplicationList", "params": [], "id": 1, "version": "1.0"};
-
-    fetch(url, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-      appList = data.result ? data.result[0] : [];
-      const listHtml = appList.map((app, i) => mb('saveShortcutSlot', [slotIdx, i], app.title)).join('');
-      showModal(`
-        <h3>ボタン${slotIdx + 1}に割り当てるアプリを選択</h3>
-        <div class="modal-list">${listHtml}</div>
-        ${mb('openSettings', [], 'キャンセル')}
-      `);
-    })
-    .catch(() => {
-      showModal(`
-        <h3>取得失敗</h3>
-        <p style="font-size:12px;">テレビからアプリ一覧を取得できませんでした。<br>Wi-Fi接続を確認してください。</p>
-        ${mb('openSettings', [], 'OK')}
-      `);
+    appList = apps;
+    dlgList(`アプリボタン${slot + 1}に割り当てるアプリを選択`, apps.map(a => a.title || 'Unknown'), i => {
+      const app = appList[i];
+      const sc = loadShortcuts();
+      sc[slot] = {title: app.title, uri: app.uri, icon_url: app.icon || ''};
+      saveShortcuts(sc);
+      renderShortcuts();
+      toast(`「${app.title}」を設定しました`);
     });
   }
 
-  function saveShortcutSlot(slotIdx, appIdx) {
-    const app = appList[appIdx];
-    if (!app) return;
-    shortcuts[slotIdx] = {title: app.title, uri: app.uri};
-    localStorage.setItem('bravia_shortcuts', JSON.stringify(shortcuts));
-    renderShortcuts();
-    closeModal();
-  }
-
-  // 背景画像選択
+  // 背景画像: 縮小して保存(localStorage の容量対策)
   function handleImageSelect(event) {
     const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        customBg = e.target.result;
-        localStorage.setItem('bravia_custom_bg', customBg);
-        applyTheme(currentTheme);
-        closeModal();
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 1200, s = Math.min(1, max / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        const data = cv.toDataURL('image/jpeg', 0.85);
+        try {
+          localStorage.setItem('bravia_bg', data);
+          customBg = data; applyTheme(); toast("背景画像を設定しました");
+        } catch (err) {
+          dlgAlert("画像保存エラー", "画像の保存に失敗しました。サイズが大きすぎる可能性があります。");
+        }
       };
-      reader.readAsDataURL(file);
-    }
+      img.onerror = () => dlgAlert("画像保存エラー", "画像の読み込みに失敗しました。");
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
   }
 
   function deleteCustomBg() {
-    customBg = "";
-    localStorage.removeItem('bravia_custom_bg');
-    applyTheme(currentTheme);
-    closeModal();
+    customBg = ""; localStorage.removeItem('bravia_bg'); applyTheme(); toast("画像を削除しテーマに戻しました");
   }
 
-  // テーマ切替
-  function openThemeSelector() {
-    const listHtml = Object.keys(THEMES).map(t => mb('chooseTheme', [t], t)).join('');
-    showModal(`
-      <h3>カラーテーマを選択</h3>
-      <div class="modal-list">${listHtml}</div>
-      ${mb('openSettings', [], '戻る')}
-    `);
+  function changeTheme() {
+    const names = Object.keys(THEMES);
+    dlgList("カラーテーマを選択", names, i => {
+      cfg.theme = names[i]; saveCfg();
+      if (customBg) { customBg = ""; localStorage.removeItem('bravia_bg'); }  // Python版と同じく背景画像を削除
+      applyTheme(); toast(`${names[i]} に変更しました`);
+    }, openSettings);
   }
 
-  function chooseTheme(name) {
-    applyTheme(name);
-    closeModal();
+  function changeIp() {
+    dlgInput("IPアドレス変更", "テレビのIPを入力してください", BRAVIA_IP, "保存", v => {
+      if (!v) return;
+      BRAVIA_IP = v; cfg.ip = v; saveCfg();
+      if (AUTH) { AUTH.ip = v; saveJSON('bravia_auth', AUTH); }
+      toast("IPアドレスを変更しました");
+      AVAILABLE_CODES = {}; fetchSupportedCodes();
+    }, openSettings);
   }
 
-  // IP変更
-  function openIpChange() {
-    showModal(`
-      <h3>IPアドレス変更</h3>
-      <input type="text" id="ipInput" value="${esc(braviaIP)}">
-      ${mb('saveIp', [], '保存')}
-      ${mb('openSettings', [], 'キャンセル')}
-    `);
+  function resetPairing() {
+    localStorage.removeItem('bravia_auth'); AUTH = null; AVAILABLE_CODES = {};
+    toast("設定を初期化しました(次回起動時に再ペアリング)");
   }
 
-  function saveIp() {
-    const val = document.getElementById('ipInput').value.trim();
-    if (val) {
-      braviaIP = val;
-      localStorage.setItem('bravia_ip', braviaIP);
+  async function manualDiscover() {
+    toast('テレビを検索中...(最大十数秒)');
+    const found = await discoverBravia(BRAVIA_IP);
+    if (found) {
+      BRAVIA_IP = found; cfg.ip = found; saveCfg();
+      if (AUTH) { AUTH.ip = found; saveJSON('bravia_auth', AUTH); }
+      toast(`見つかりました: ${found}`);
+      fetchSupportedCodes();
+    } else {
+      dlgAlert("検索失敗", "同じサブネット内でBRAVIAが見つかりませんでした。\nテレビの電源、Wi-Fi、またはブラウザのCORS制限を確認してください。");
     }
-    closeModal();
   }
 
-  function clearAuth() {
-    localStorage.removeItem('bravia_auth_cookie');
-    closeModal();
+  function setPsk() {
+    dlgInput("事前共有キー(PSK)", "テレビ側で設定したキーを入力(空欄で無効化)。\nPSK使用時はPINペアリング不要です。", cfg.psk, "保存", v => {
+      cfg.psk = v; saveCfg();
+      toast(v ? "PSKを保存しました" : "PSKを無効にしました");
+      AVAILABLE_CODES = {}; fetchSupportedCodes();
+    }, openSettings);
   }
 
-  // モーダルユーティリティ
-  function showModal(html) {
-    document.getElementById('modalContent').innerHTML = html;
-    document.getElementById('modalOverlay').style.display = 'flex';
-  }
-  function closeModal() {
-    document.getElementById('modalOverlay').style.display = 'none';
-  }
+  // ==================================================
+  // 起動処理
+  // ==================================================
+  window.onload = async () => {
+    applyTheme();
+    renderApp();
+    if (cfg.psk) { await fetchSupportedCodes(); return; }
+    AUTH = await getAuth();
+    if (AUTH) await fetchSupportedCodes();
+  };
 </script>
 </body>
 </html>
