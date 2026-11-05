@@ -38,14 +38,13 @@ jobs:
             /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST_PATH" || true
           fi
 
-      - name: Create Self-Signed Certificate for Ad-Hoc Build
+      - name: Setup Self-Signed Keychain
         run: |
           KEYCHAIN_PATH=$HOME/Library/Keychains/build.keychain-db
           security create-keychain -p "buildpass" $KEYCHAIN_PATH
           security default-keychain -s $KEYCHAIN_PATH
           security unlock-keychain -p "buildpass" $KEYCHAIN_PATH
           
-          # PKCS12の非互換を避けるため旧互換アルゴリズムと暗号パスワードを指定
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout selfsigned.key -out selfsigned.crt \
             -subj "/CN=iOS Development/O=BraviaRemote/C=JP"
@@ -60,7 +59,7 @@ jobs:
           security import selfsigned.p12 -k $KEYCHAIN_PATH -P "buildpass" -A
           security set-key-partition-list -S apple-tool-,apple:,codesign: -s -k "buildpass" $KEYCHAIN_PATH
 
-      - name: Build App Package (Device / Self-Signed)
+      - name: Build App Package (Ad-Hoc / Force Code Sign)
         run: |
           PROJ_PATH=$(find braviaremote-ios -name "*.xcodeproj" | head -n 1)
           SCHEME_NAME=$(xcodebuild -list -project "$PROJ_PATH" | grep -A 10 "Schemes:" | tail -n +2 | head -n 1 | xargs)
@@ -72,7 +71,10 @@ jobs:
             CODE_SIGN_STYLE="Manual" \
             CODE_SIGN_IDENTITY="iOS Development" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=YES
+            CODE_SIGNING_ALLOWED=YES \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            DEVELOPMENT_TEAM="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
       - name: Package IPA Payload
         run: |
