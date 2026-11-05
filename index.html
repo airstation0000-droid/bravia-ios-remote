@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Braviaリモコン</title>
+  
+  <!-- PWA 化用メタタグ -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Braviaリモコン">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3597/3597086.png">
+
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
+    body { background-color: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; padding: 16px 12px; width: 100vw; }
+    .grid { display: grid; gap: 8px; margin-bottom: 12px; }
+    .row-4 { grid-template-columns: repeat(4, 1fr); }
+    .row-3 { grid-template-columns: repeat(3, 1fr); }
+    button {
+      background: rgba(44, 44, 46, 0.9); color: #fff; border: none; border-radius: 12px;
+      font-size: 16px; font-weight: bold; height: 56px; display: flex; align-items: center; justify-content: center;
+    }
+    button:active { background: #555 !important; opacity: 0.8; }
+    .bg-green { background: #30d158; }
+    .bg-red { background: #ff453a; }
+    .bg-blue { background: #0a84ff; }
+    .dpad-grid { display: grid; grid-template-columns: 90px 90px 90px; justify-content: center; gap: 8px; margin: 16px 0; }
+    .bg-dpad { background: rgba(58, 58, 60, 0.9); font-size: 22px; }
+  </style>
+</head>
+<body>
+
+  <div class="grid row-4">
+    <button onclick="sendIRCC('Digital')">地デジ</button>
+    <button onclick="sendIRCC('BS')">BS/CS</button>
+    <button class="bg-red" onclick="sendIRCC('TvPower')">電源</button>
+    <button class="bg-green" onclick="sendIRCC('Input')">入力</button>
+  </div>
+
+  <!-- 十字キー -->
+  <div class="dpad-grid">
+    <div></div><button class="bg-dpad" onclick="sendIRCC('Up')">▲</button><div></div>
+    <button class="bg-dpad" onclick="sendIRCC('Left')">◄</button>
+    <button style="background:#48484a;" onclick="sendIRCC('Confirm')">決定</button>
+    <button class="bg-dpad" onclick="sendIRCC('Right')">►</button>
+    <div></div><button class="bg-dpad" onclick="sendIRCC('Down')">▼</button><div></div>
+  </div>
+
+  <div class="grid row-3">
+    <button class="bg-blue" onclick="sendIRCC('VolumeUp')">音量 ＋</button>
+    <button onclick="sendIRCC('Home')">ホーム</button>
+    <button class="bg-blue" onclick="sendIRCC('ChannelUp')">CH ＋</button>
+  </div>
+  <div class="grid row-3">
+    <button class="bg-blue" onclick="sendIRCC('VolumeDown')">音量 ー</button>
+    <button onclick="sendIRCC('Return')">戻る</button>
+    <button class="bg-blue" onclick="sendIRCC('ChannelDown')">CH ー</button>
+  </div>
+
+<script>
+  // ご自宅のBRAVIAのIPアドレスに変更してください
+  const braviaIP = "192.168.1.128";
+
+  function sendIRCC(name) {
+    const codes = {
+      'TvPower':'AAAAAQAAAAEAAAAVAw==','Digital':'AAAAAgAAAJcAAAANAw==','BS':'AAAAAgAAAJcAAAAPAw==',
+      'VolumeUp':'AAAAAQAAAAEAAAASAw==','VolumeDown':'AAAAAQAAAAEAAAATAw==','Mute':'AAAAAQAAAAEAAAAUAw==',
+      'ChannelUp':'AAAAAQAAAAEAAAAQAw==','ChannelDown':'AAAAAQAAAAEAAAARAw==',
+      'Up':'AAAAAQAAAAEAAAB0Aw==','Down':'AAAAAQAAAAEAAAB1Aw==','Left':'AAAAAQAAAAEAAAA0Aw==','Right':'AAAAAQAAAAEAAAAzAw==','Confirm':'AAAAAQAAAAEAAABlAw==',
+      'Return':'AAAAAgAAAJcAAAAjAw==','Home':'AAAAAQAAAAEAAABgAw==','Input':'AAAAAQAAAAEAAAAlAw=='
+    };
+    const code = codes[name];
+    if (!code) return;
+    
+    const url = "http://" + braviaIP + "/sony/IRCC";
+    const xmlData = '<?xml version="1.0"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:X_SendIRCC xmlns:u="urn:schemas-sony-com:service:IRCC:1"><IRCCCode>' + code + '</IRCCCode></u:X_SendIRCC></s:Body></s:Envelope>';
+    
+    fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/xml; charset=UTF-8",
+        "SOAPACTION": '"urn:schemas-sony-com:service:IRCC:1#X_SendIRCC"'
+      },
+      body: xmlData,
+      mode: "no-cors"
+    }).catch(e => console.log(e));
+  }
+</script>
+</body>
+</html>
