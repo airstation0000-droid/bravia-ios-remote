@@ -17,28 +17,36 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install Dependencies
+      - name: Install Build Tools
         run: |
-          pip install kivy-ios
           brew install autoconf automake libtool pkg-config
+          pip install kivy-ios requests
 
-      - name: Build Kivy iOS Project
+      - name: Build Xcode Project
         run: |
-          toolchain build python3 kivy
+          toolchain build python3 kivy requests
           toolchain create BraviaRemote main.py
 
-      - name: Build App Package
+      - name: Configure Network Permissions (Info.plist)
+        run: |
+          PLIST_PATH="BraviaRemote-ios/BraviaRemote-Info.plist"
+          if [ -f "$PLIST_PATH" ]; then
+            /usr/libexec/PlistBuddy -c "Add :NSLocalNetworkUsageDescription string 'BRAVIAテレビを操作するためにローカルネットワークを使用します。'" "$PLIST_PATH" || true
+            /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST_PATH" || true
+          fi
+
+      - name: Build Simulator App
         run: |
           xcodebuild -project BraviaRemote-ios/BraviaRemote.xcodeproj \
             -scheme BraviaRemote \
             -configuration Release \
-            -sdk iphoneos \
+            -sdk iphonesimulator \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Upload App Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: BraviaRemote-iOS-App
-          path: BraviaRemote-ios/build/Release-iphoneos/
+          path: BraviaRemote-ios/build/Release-iphonesimulator/
