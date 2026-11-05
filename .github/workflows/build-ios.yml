@@ -38,21 +38,30 @@ jobs:
             /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST_PATH" || true
           fi
 
-      - name: Build App Package
+      - name: Build App Package (Device)
         run: |
           PROJ_PATH=$(find braviaremote-ios -name "*.xcodeproj" | head -n 1)
           SCHEME_NAME=$(xcodebuild -list -project "$PROJ_PATH" | grep -A 10 "Schemes:" | tail -n +2 | head -n 1 | xargs)
           
+          # 実機iPhone用（iphoneos）としてビルド
           xcodebuild -project "$PROJ_PATH" \
             -scheme "$SCHEME_NAME" \
             -configuration Release \
-            -sdk iphonesimulator \
+            -sdk iphoneos \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Package App to Artifacts
+        run: |
+          mkdir -p output
+          APP_PATH=$(find braviaremote-ios/build -name "*.app" | head -n 1)
+          if [ -d "$APP_PATH" ]; then
+            cp -R "$APP_PATH" output/
+          fi
 
       - name: Upload App Artifact
         uses: actions/upload-artifact@v4
         with:
           name: BraviaRemote-iOS-App
-          path: braviaremote-ios/build/Release-iphonesimulator/
+          path: output/
