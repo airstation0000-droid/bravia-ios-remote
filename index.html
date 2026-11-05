@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Bravia Remote</title>
-  
+
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Braviaリモコン">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3597/3597086.png">
 
   <style>
-    * { box-sizing: border-box; touch-action: manipulation; user-select: none; }
+    * { box-sizing: border-box; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
     body {
       background-color: #ff1493;
       color: #fff; font-family: -apple-system, BlinkMacSystemFont, sans-serif;
@@ -26,12 +26,19 @@
     .row-3 { grid-template-columns: repeat(3, 1fr); }
     .row-5 { grid-template-columns: repeat(5, 1fr); }
 
-    button {
+    /* button の代わりに label.btn を使用(触覚フィードバック用) */
+    .btn {
+      position: relative; cursor: pointer;
       background: rgba(44, 44, 46, 0.9); color: #fff; border: none; border-radius: 10px;
       font-size: 14px; font-weight: bold; height: 50px; display: flex; align-items: center; justify-content: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.4); backdrop-filter: blur(5px);
     }
-    button:active { background: rgba(85, 85, 85, 0.9) !important; transform: scale(0.96); }
+    .btn:active { background: rgba(85, 85, 85, 0.9) !important; transform: scale(0.96); }
+    /* 触覚用スイッチ: 見えないが存在はしている(display:none にしない) */
+    .btn input[switch] {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      margin: 0; opacity: 0.01; pointer-events: none;
+    }
 
     .bg-setting { background: rgba(28, 28, 30, 0.9); color: #aaa; font-size: 12px; }
     .bg-green { background: rgba(48, 209, 88, 0.9); color: #000; }
@@ -51,7 +58,7 @@
     .btn-yellow { background: #ffd60a; height: 26px; }
 
     .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
-    .numpad button { height: 44px; }
+    .numpad .btn { height: 44px; }
 
     .shortcut-btn { background: rgba(28, 28, 30, 0.9); color: #888; font-size: 13px; }
 
@@ -65,11 +72,12 @@
       display: flex; flex-direction: column; gap: 12px; border: 1px solid #333;
     }
     .modal-content h3 { margin: 0; font-size: 16px; text-align: center; }
-    .modal-content input {
+    .modal-content input[type="text"] {
       background: #2c2c2e; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; font-size: 16px; text-align: center;
+      user-select: text; -webkit-user-select: text;
     }
     .modal-list { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
-    .modal-list button { height: 40px; font-size: 13px; background: #2c2c2e; text-align: left; padding: 0 12px; justify-content: flex-start; }
+    .modal-list .btn { height: 40px; font-size: 13px; background: #2c2c2e; text-align: left; padding: 0 12px; justify-content: flex-start; }
   </style>
 </head>
 <body>
@@ -77,82 +85,86 @@
 <div class="container">
   <!-- 1. 最上部 -->
   <div class="grid row-4">
-    <button class="bg-setting" onclick="openSettings()">≡ アプリ設定</button>
-    <button onclick="handleBtn('TERRESTRIAL')">地デジ</button>
-    <button onclick="handleBtn('BS_CS')">BS/CS</button>
-    <button class="bg-red" onclick="handleBtn('POWER')">電源</button>
+    <label class="btn bg-setting" data-fn="openSettings">≡ アプリ設定<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="TERRESTRIAL">地デジ<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="BS_CS">BS/CS<input type="checkbox" switch></label>
+    <label class="btn bg-red" data-cmd="POWER">電源<input type="checkbox" switch></label>
   </div>
 
   <!-- 2. 十字キー -->
   <div class="dpad-grid">
-    <div></div><button class="bg-dpad" onclick="handleBtn('UP')">▲</button><div></div>
-    <button class="bg-dpad" onclick="handleBtn('LEFT')">◄</button>
-    <button class="bg-confirm" onclick="handleBtn('SELECT')">◆ 決定</button>
-    <button class="bg-dpad" onclick="handleBtn('RIGHT')">►</button>
-    <div></div><button class="bg-dpad" onclick="handleBtn('DOWN')">▼</button><div></div>
+    <div></div><label class="btn bg-dpad" data-cmd="UP">▲<input type="checkbox" switch></label><div></div>
+    <label class="btn bg-dpad" data-cmd="LEFT">◄<input type="checkbox" switch></label>
+    <label class="btn bg-confirm" data-cmd="SELECT">◆ 決定<input type="checkbox" switch></label>
+    <label class="btn bg-dpad" data-cmd="RIGHT">►<input type="checkbox" switch></label>
+    <div></div><label class="btn bg-dpad" data-cmd="DOWN">▼<input type="checkbox" switch></label><div></div>
   </div>
 
   <!-- 3. 音量 & チャンネル -->
   <div class="grid row-5">
-    <button class="bg-setting" onclick="handleBtn('MUTE')">消音</button>
-    <button onclick="handleBtn('VOL_DOWN')">音ー</button>
-    <button onclick="handleBtn('VOL_UP')">音＋</button>
-    <button onclick="handleBtn('CH_DOWN')">CHー</button>
-    <button onclick="handleBtn('CH_UP')">CH＋</button>
+    <label class="btn bg-setting" data-cmd="MUTE">消音<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="VOL_DOWN">音ー<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="VOL_UP">音＋<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="CH_DOWN">CHー<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="CH_UP">CH＋<input type="checkbox" switch></label>
   </div>
 
   <!-- 4. 戻る / テレビ / ホーム -->
   <div class="grid row-3">
-    <button class="bg-cyan" onclick="handleBtn('BACK')">戻る</button>
-    <button onclick="handleBtn('TV')">テレビ</button>
-    <button class="bg-dark" onclick="handleBtn('HOME')">ホーム</button>
+    <label class="btn bg-cyan" data-cmd="BACK">戻る<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="TV">テレビ<input type="checkbox" switch></label>
+    <label class="btn bg-dark" data-cmd="HOME">ホーム<input type="checkbox" switch></label>
   </div>
 
   <!-- 5. 入力切換 / 番組表 / メニュー -->
   <div class="grid row-3">
-    <button onclick="handleBtn('INPUT')">入力切換</button>
-    <button class="bg-blue" onclick="handleBtn('EPG')">番組表</button>
-    <button onclick="handleBtn('MENU')">メニュー</button>
+    <label class="btn" data-cmd="INPUT">入力切換<input type="checkbox" switch></label>
+    <label class="btn bg-blue" data-cmd="EPG">番組表<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="MENU">メニュー<input type="checkbox" switch></label>
   </div>
 
-  <!-- アプリショートカット (3枠) -->
-  <div class="grid row-3" id="shortcutContainer">
-    <button class="shortcut-btn" onclick="onShortcutClick(0)">未設定</button>
-    <button class="shortcut-btn" onclick="onShortcutClick(1)">未設定</button>
-    <button class="shortcut-btn" onclick="onShortcutClick(2)">未設定</button>
-  </div>
+  <!-- アプリショートカット (3枠) : JSで描画 -->
+  <div class="grid row-3" id="shortcutContainer"></div>
 
   <!-- 6. カラーボタン -->
   <div class="color-grid">
-    <button class="btn-blue" onclick="handleBtn('BLUE')"></button>
-    <button class="btn-red" onclick="handleBtn('RED')"></button>
-    <button class="btn-green" onclick="handleBtn('GREEN')"></button>
-    <button class="btn-yellow" onclick="handleBtn('YELLOW')"></button>
+    <label class="btn btn-blue" data-cmd="BLUE"><input type="checkbox" switch></label>
+    <label class="btn btn-red" data-cmd="RED"><input type="checkbox" switch></label>
+    <label class="btn btn-green" data-cmd="GREEN"><input type="checkbox" switch></label>
+    <label class="btn btn-yellow" data-cmd="YELLOW"><input type="checkbox" switch></label>
   </div>
 
   <!-- 7. テンキー -->
   <div class="numpad">
-    <button onclick="handleBtn('NUM_1')">1</button><button onclick="handleBtn('NUM_2')">2</button><button onclick="handleBtn('NUM_3')">3</button>
-    <button onclick="handleBtn('NUM_4')">4</button><button onclick="handleBtn('NUM_5')">5</button><button onclick="handleBtn('NUM_6')">6</button>
-    <button onclick="handleBtn('NUM_7')">7</button><button onclick="handleBtn('NUM_8')">8</button><button onclick="handleBtn('NUM_9')">9</button>
-    <button onclick="handleBtn('NUM_10')">10</button><button onclick="handleBtn('NUM_11')">11</button><button onclick="handleBtn('NUM_12')">12</button>
+    <label class="btn" data-cmd="NUM_1">1<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_2">2<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_3">3<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_4">4<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_5">5<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_6">6<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_7">7<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_8">8<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_9">9<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_10">10<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_11">11<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="NUM_12">12<input type="checkbox" switch></label>
   </div>
 
   <!-- 8. メディアコントロール -->
   <div class="grid row-3">
-    <button onclick="handleBtn('AUDIO_SELECT')">音声切換</button>
-    <button onclick="handleBtn('SUBTITLE')">字幕</button>
-    <button onclick="handleBtn('RECORDER_HOME')">レコーダー</button>
+    <label class="btn" data-cmd="AUDIO_SELECT">音声切換<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="SUBTITLE">字幕<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="RECORDER_HOME">レコーダー<input type="checkbox" switch></label>
   </div>
   <div class="grid row-3">
-    <button onclick="handleBtn('REWIND')">◄◄ 早戻し</button>
-    <button class="bg-green" onclick="handleBtn('PLAY')">► 再生</button>
-    <button onclick="handleBtn('FF')">早送り ►►</button>
+    <label class="btn" data-cmd="REWIND">◄◄ 早戻し<input type="checkbox" switch></label>
+    <label class="btn bg-green" data-cmd="PLAY">► 再生<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="FF">早送り ►►<input type="checkbox" switch></label>
   </div>
   <div class="grid row-3">
-    <button class="bg-confirm" onclick="handleBtn('DATA')">d (データ)</button>
-    <button class="bg-red" onclick="handleBtn('STOP')">■ 停止</button>
-    <button onclick="handleBtn('REC_LIST')">録画リスト</button>
+    <label class="btn bg-confirm" data-cmd="DATA">d (データ)<input type="checkbox" switch></label>
+    <label class="btn bg-red" data-cmd="STOP">■ 停止<input type="checkbox" switch></label>
+    <label class="btn" data-cmd="REC_LIST">録画リスト<input type="checkbox" switch></label>
   </div>
 </div>
 
@@ -171,7 +183,8 @@
   let authCookie = localStorage.getItem('bravia_auth_cookie') || "";
   let customBg = localStorage.getItem('bravia_custom_bg') || "";
   let currentTheme = localStorage.getItem('bravia_theme') || "ビビッドピンク";
-  
+  let appList = [];
+
   let shortcuts = JSON.parse(localStorage.getItem('bravia_shortcuts') || JSON.stringify([
     {title: "未設定", uri: ""}, {title: "未設定", uri: ""}, {title: "未設定", uri: ""}
   ]));
@@ -206,21 +219,48 @@
     'DATA':'AAAAAgAAAJcAAAAnAw==','STOP':'AAAAAgAAAJcAAAAdAw=='
   };
 
+  // --------------------------------------------------
+  // 触覚フィードバック(iOSはスイッチの実タップで発生)
+  // --------------------------------------------------
+  // 全ての label.btn 内のスイッチ変化をここで一括処理する
+  document.addEventListener('change', (e) => {
+    const sw = e.target;
+    if (!(sw instanceof HTMLInputElement) || !sw.hasAttribute('switch')) return;
+    const btn = sw.closest('.btn');
+    if (!btn) return;
+
+    // Android 等: Vibration API
+    if (navigator.vibrate) navigator.vibrate(40);
+
+    if (btn.dataset.cmd) {
+      handleBtn(btn.dataset.cmd);
+    } else if (btn.dataset.fn && typeof window[btn.dataset.fn] === 'function') {
+      const args = btn.dataset.args ? JSON.parse(btn.dataset.args) : [];
+      window[btn.dataset.fn](...args);
+    }
+  });
+
+  // HTML エスケープ(属性値用)
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // モーダル用ボタン生成: mb('関数名', [引数...], '表示文字', '追加クラス')
+  function mb(fn, args, text, cls) {
+    return `<label class="btn ${cls || ''}" data-fn="${fn}" data-args="${esc(JSON.stringify(args || []))}">${esc(text)}<input type="checkbox" switch></label>`;
+  }
+
   // 初期ロード時
   window.onload = () => {
     applyTheme(currentTheme);
     renderShortcuts();
   };
 
-  function triggerHaptic() {
-    if (window.navigator.vibrate) window.navigator.vibrate(40);
-  }
-
   function showNetworkError() {
     showModal(`
       <h3>接続エラー</h3>
       <p style="font-size:13px; color:#aaa; text-align:center;">テレビとスマホが同じ Wi-Fi に接続されていないか、テレビの電源が入っていません。<br>ネットワークを確認してください。</p>
-      <button onclick="closeModal()">OK</button>
+      ${mb('closeModal', [], 'OK')}
     `);
   }
 
@@ -238,22 +278,17 @@
 
   function renderShortcuts() {
     const container = document.getElementById('shortcutContainer');
-    container.innerHTML = '';
-    shortcuts.forEach((item, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'shortcut-btn';
-      btn.style.color = item.title === '未設定' ? '#888' : '#fff';
-      btn.innerText = item.title || '未設定';
-      btn.onclick = () => onShortcutClick(idx);
-      container.appendChild(btn);
-    });
+    container.innerHTML = shortcuts.map((item, idx) => {
+      const title = item.title || '未設定';
+      const color = title === '未設定' ? '#888' : '#fff';
+      return `<label class="btn shortcut-btn" style="color:${color}" data-fn="onShortcutClick" data-args="[${idx}]">${esc(title)}<input type="checkbox" switch></label>`;
+    }).join('');
   }
 
   // --------------------------------------------------
   // 通信 & コマンド送信
   // --------------------------------------------------
   function handleBtn(cmd) {
-    triggerHaptic();
     if (cmd === 'REC_LIST') {
       launchAppByUri("com.sony.dtv.com.sony.dtv.recapp.com.sony.dtv.recapp.MainActivityIcon");
       return;
@@ -292,24 +327,26 @@
   // アプリ設定モーダル & ショートカット機能
   // --------------------------------------------------
   function openSettings() {
-    triggerHaptic();
-    let bgDeleteOpt = customBg ? `<button onclick="deleteCustomBg()">🗑 カスタム背景画像を削除</button>` : '';
+    const bgDeleteOpt = customBg ? mb('deleteCustomBg', [], '🗑 カスタム背景画像を削除') : '';
     showModal(`
-      <h3>アプリ設定 (IP: ${braviaIP})</h3>
+      <h3>アプリ設定 (IP: ${esc(braviaIP)})</h3>
       <div class="modal-list">
-        <button onclick="openShortcutSelector()">📱 アプリショートカットボタン変更</button>
-        <button onclick="document.getElementById('bgFileInput').click()">🖼 写真から背景画像を選択</button>
+        ${mb('openShortcutSelector', [], '📱 アプリショートカットボタン変更')}
+        ${mb('pickBgFile', [], '🖼 写真から背景画像を選択')}
         ${bgDeleteOpt}
-        <button onclick="openThemeSelector()">🎨 カラーテーマに変更</button>
-        <button onclick="openIpChange()">🌐 IPアドレスを手動変更</button>
-        <button onclick="clearAuth()">🔑 ペアリング情報の初期化</button>
+        ${mb('openThemeSelector', [], '🎨 カラーテーマに変更')}
+        ${mb('openIpChange', [], '🌐 IPアドレスを手動変更')}
+        ${mb('clearAuth', [], '🔑 ペアリング情報の初期化')}
       </div>
-      <button onclick="closeModal()">キャンセル</button>
+      ${mb('closeModal', [], 'キャンセル')}
     `);
   }
 
+  function pickBgFile() {
+    document.getElementById('bgFileInput').click();
+  }
+
   function onShortcutClick(idx) {
-    triggerHaptic();
     const item = shortcuts[idx];
     if (item && item.uri) {
       launchAppByUri(item.uri);
@@ -322,11 +359,11 @@
     showModal(`
       <h3>変更するボタンを選択</h3>
       <div class="modal-list">
-        <button onclick="selectAppForSlot(0)">ボタン1: ${shortcuts[0].title}</button>
-        <button onclick="selectAppForSlot(1)">ボタン2: ${shortcuts[1].title}</button>
-        <button onclick="selectAppForSlot(2)">ボタン3: ${shortcuts[2].title}</button>
+        ${mb('selectAppForSlot', [0], 'ボタン1: ' + shortcuts[0].title)}
+        ${mb('selectAppForSlot', [1], 'ボタン2: ' + shortcuts[1].title)}
+        ${mb('selectAppForSlot', [2], 'ボタン3: ' + shortcuts[2].title)}
       </div>
-      <button onclick="openSettings()">戻る</button>
+      ${mb('openSettings', [], '戻る')}
     `);
   }
 
@@ -334,7 +371,7 @@
     showModal(`<h3>アプリ一覧取得中...</h3>`);
     const url = `http://${braviaIP}/sony/appControl`;
     const payload = {"method": "getApplicationList", "params": [], "id": 1, "version": "1.0"};
-    
+
     fetch(url, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
@@ -342,25 +379,27 @@
     })
     .then(res => res.json())
     .then(data => {
-      const apps = data.result ? data.result[0] : [];
-      let listHtml = apps.map(app => `<button onclick="saveShortcutSlot(${slotIdx}, '${app.title}', '${app.uri}')">${app.title}</button>`).join('');
+      appList = data.result ? data.result[0] : [];
+      const listHtml = appList.map((app, i) => mb('saveShortcutSlot', [slotIdx, i], app.title)).join('');
       showModal(`
         <h3>ボタン${slotIdx + 1}に割り当てるアプリを選択</h3>
         <div class="modal-list">${listHtml}</div>
-        <button onclick="openSettings()">キャンセル</button>
+        ${mb('openSettings', [], 'キャンセル')}
       `);
     })
     .catch(() => {
       showModal(`
         <h3>取得失敗</h3>
         <p style="font-size:12px;">テレビからアプリ一覧を取得できませんでした。<br>Wi-Fi接続を確認してください。</p>
-        <button onclick="openSettings()">OK</button>
+        ${mb('openSettings', [], 'OK')}
       `);
     });
   }
 
-  function saveShortcutSlot(slotIdx, title, uri) {
-    shortcuts[slotIdx] = {title: title, uri: uri};
+  function saveShortcutSlot(slotIdx, appIdx) {
+    const app = appList[appIdx];
+    if (!app) return;
+    shortcuts[slotIdx] = {title: app.title, uri: app.uri};
     localStorage.setItem('bravia_shortcuts', JSON.stringify(shortcuts));
     renderShortcuts();
     closeModal();
@@ -390,21 +429,26 @@
 
   // テーマ切替
   function openThemeSelector() {
-    let listHtml = Object.keys(THEMES).map(t => `<button onclick="applyTheme('${t}'); closeModal();">${t}</button>`).join('');
+    const listHtml = Object.keys(THEMES).map(t => mb('chooseTheme', [t], t)).join('');
     showModal(`
       <h3>カラーテーマを選択</h3>
       <div class="modal-list">${listHtml}</div>
-      <button onclick="openSettings()">戻る</button>
+      ${mb('openSettings', [], '戻る')}
     `);
+  }
+
+  function chooseTheme(name) {
+    applyTheme(name);
+    closeModal();
   }
 
   // IP変更
   function openIpChange() {
     showModal(`
       <h3>IPアドレス変更</h3>
-      <input type="text" id="ipInput" value="${braviaIP}">
-      <button onclick="saveIp()">保存</button>
-      <button onclick="openSettings()">キャンセル</button>
+      <input type="text" id="ipInput" value="${esc(braviaIP)}">
+      ${mb('saveIp', [], '保存')}
+      ${mb('openSettings', [], 'キャンセル')}
     `);
   }
 
