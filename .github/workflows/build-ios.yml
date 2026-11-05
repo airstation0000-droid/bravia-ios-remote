@@ -28,12 +28,11 @@ jobs:
 
       - name: Create Xcode Project
         run: |
-          toolchain create BraviaRemote main.py
-          pip install --target=BraviaRemote-ios/YourApp/YourApp/site-packages requests urllib3 chardet certifi idna || true
+          toolchain create braviaremote main.py
 
       - name: Configure Network Permissions
         run: |
-          PLIST_PATH="BraviaRemote-ios/BraviaRemote-Info.plist"
+          PLIST_PATH=$(find braviaremote-ios -name "*-Info.plist" | head -n 1)
           if [ -f "$PLIST_PATH" ]; then
             /usr/libexec/PlistBuddy -c "Add :NSLocalNetworkUsageDescription string 'BRAVIAテレビを操作するためにローカルネットワークを使用します。'" "$PLIST_PATH" || true
             /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST_PATH" || true
@@ -41,8 +40,11 @@ jobs:
 
       - name: Build App Package
         run: |
-          xcodebuild -project BraviaRemote-ios/BraviaRemote.xcodeproj \
-            -scheme BraviaRemote \
+          PROJ_PATH=$(find braviaremote-ios -name "*.xcodeproj" | head -n 1)
+          SCHEME_NAME=$(xcodebuild -list -project "$PROJ_PATH" | grep -A 10 "Schemes:" | tail -n +2 | head -n 1 | xargs)
+          
+          xcodebuild -project "$PROJ_PATH" \
+            -scheme "$SCHEME_NAME" \
             -configuration Release \
             -sdk iphonesimulator \
             CODE_SIGN_IDENTITY="" \
@@ -53,4 +55,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: BraviaRemote-iOS-App
-          path: BraviaRemote-ios/build/Release-iphonesimulator/
+          path: braviaremote-ios/build/Release-iphonesimulator/
