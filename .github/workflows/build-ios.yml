@@ -28,7 +28,8 @@ jobs:
 
       - name: Create Xcode Project
         run: |
-          toolchain create braviaremote main.py
+          # main.py の入っているディレクトリ（カレントディレクトリ . ）を指定してプロジェクトを作成
+          toolchain create braviaremote .
 
       - name: Configure Network Permissions
         run: |
@@ -38,28 +39,8 @@ jobs:
             /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST_PATH" || true
           fi
 
-      - name: Generate Dummy Provisioning Profile & Self-Signed Cert
+      - name: Fix Xcode Project Settings for Unsigned Build
         run: |
-          KEYCHAIN_PATH=$HOME/Library/Keychains/build.keychain-db
-          security create-keychain -p "buildpass" $KEYCHAIN_PATH
-          security default-keychain -s $KEYCHAIN_PATH
-          security unlock-keychain -p "buildpass" $KEYCHAIN_PATH
-          
-          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-            -keyout selfsigned.key -out selfsigned.crt \
-            -subj "/CN=iOS Development/O=BraviaRemote/C=JP"
-          
-          openssl pkcs12 -export -out selfsigned.p12 \
-            -inkey selfsigned.key -in selfsigned.crt \
-            -passout pass:buildpass -legacy || \
-          openssl pkcs12 -export -out selfsigned.p12 \
-            -inkey selfsigned.key -in selfsigned.crt \
-            -passout pass:buildpass
-          
-          security import selfsigned.p12 -k $KEYCHAIN_PATH -P "buildpass" -A
-          security set-key-partition-list -S apple-tool-,apple:,codesign: -s -k "buildpass" $KEYCHAIN_PATH
-
-          # Provisioning Profileエラー回避のためXcodeプロジェクト設定をAd-Hoc / CodeSign無効化に強制書き換え
           PROJ_PATH=$(find braviaremote-ios -name "*.xcodeproj" | head -n 1)
           PBXPROJ="$PROJ_PATH/project.pbxproj"
           sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' "$PBXPROJ"
