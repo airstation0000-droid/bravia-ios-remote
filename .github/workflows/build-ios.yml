@@ -41,18 +41,24 @@ jobs:
       - name: Create Self-Signed Certificate for Ad-Hoc Build
         run: |
           KEYCHAIN_PATH=$HOME/Library/Keychains/build.keychain-db
-          security create-keychain -p "" $KEYCHAIN_PATH
+          security create-keychain -p "buildpass" $KEYCHAIN_PATH
           security default-keychain -s $KEYCHAIN_PATH
-          security unlock-keychain -p "" $KEYCHAIN_PATH
+          security unlock-keychain -p "buildpass" $KEYCHAIN_PATH
           
+          # PKCS12の非互換を避けるため旧互換アルゴリズムと暗号パスワードを指定
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout selfsigned.key -out selfsigned.crt \
             -subj "/CN=iOS Development/O=BraviaRemote/C=JP"
           
-          openssl pkcs12 -export -out selfsigned.p12 -inkey selfsigned.key -in selfsigned.crt -passout pass:
+          openssl pkcs12 -export -out selfsigned.p12 \
+            -inkey selfsigned.key -in selfsigned.crt \
+            -passout pass:buildpass -legacy || \
+          openssl pkcs12 -export -out selfsigned.p12 \
+            -inkey selfsigned.key -in selfsigned.crt \
+            -passout pass:buildpass
           
-          security import selfsigned.p12 -k $KEYCHAIN_PATH -P "" -A
-          security set-key-partition-list -S apple-tool-,apple:,codesign: -s -k "" $KEYCHAIN_PATH
+          security import selfsigned.p12 -k $KEYCHAIN_PATH -P "buildpass" -A
+          security set-key-partition-list -S apple-tool-,apple:,codesign: -s -k "buildpass" $KEYCHAIN_PATH
 
       - name: Build App Package (Device / Self-Signed)
         run: |
