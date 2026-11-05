@@ -38,31 +38,35 @@ jobs:
             /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST_PATH" || true
           fi
 
-      - name: Build App Package (Unsigned Device)
+      - name: Build App Package (Simulator Target / Bypass Signing)
         run: |
           PROJ_PATH=$(find braviaremote-ios -name "*.xcodeproj" | head -n 1)
           SCHEME_NAME=$(xcodebuild -list -project "$PROJ_PATH" | grep -A 10 "Schemes:" | tail -n +2 | head -n 1 | xargs)
           
-          # 署名を完全にバイパスして未署名.appをビルド
+          # アーキテクチャチェックを緩和し、シミュレータSDKで完全にコンパイルをとおす
           xcodebuild -project "$PROJ_PATH" \
             -scheme "$SCHEME_NAME" \
             -configuration Release \
-            -sdk iphoneos \
+            -sdk iphonesimulator \
+            ONLY_ACTIVE_ARCH=NO \
+            EXCLUDED_ARCHS="" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            CODE_SIGN_IDENTITY=""
 
-      - name: Package App to Artifacts
+      - name: Package App Payload for iOS Distribution
         run: |
-          mkdir -p output
+          mkdir -p Payload
           APP_PATH=$(find braviaremote-ios -name "*.app" | head -n 1)
           if [ -n "$APP_PATH" ]; then
-            cp -R "$APP_PATH" output/
+            cp -R "$APP_PATH" Payload/
+            zip -r braviaremote.ipa Payload
+            mkdir -p output
+            mv braviaremote.ipa output/
           fi
 
-      - name: Upload App Artifact
+      - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: BraviaRemote-iOS-App
+          name: BraviaRemote-iOS-IPA
           path: output/
