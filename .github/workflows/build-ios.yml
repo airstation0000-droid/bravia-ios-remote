@@ -38,7 +38,7 @@ jobs:
             /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsArbitraryLoads bool true" "$PLIST_PATH" || true
           fi
 
-      - name: Setup Self-Signed Keychain
+      - name: Generate Dummy Provisioning Profile & Self-Signed Cert
         run: |
           KEYCHAIN_PATH=$HOME/Library/Keychains/build.keychain-db
           security create-keychain -p "buildpass" $KEYCHAIN_PATH
@@ -59,7 +59,14 @@ jobs:
           security import selfsigned.p12 -k $KEYCHAIN_PATH -P "buildpass" -A
           security set-key-partition-list -S apple-tool-,apple:,codesign: -s -k "buildpass" $KEYCHAIN_PATH
 
-      - name: Build App Package (Ad-Hoc / Force Code Sign)
+          # Provisioning Profileエラー回避のためXcodeプロジェクト設定をAd-Hoc / CodeSign無効化に強制書き換え
+          PROJ_PATH=$(find braviaremote-ios -name "*.xcodeproj" | head -n 1)
+          PBXPROJ="$PROJ_PATH/project.pbxproj"
+          sed -i '' 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' "$PBXPROJ"
+          sed -i '' 's/DEVELOPMENT_TEAM = "";//g' "$PBXPROJ"
+          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = "";//g' "$PBXPROJ"
+
+      - name: Build App Package (Device / Bypassed Profile)
         run: |
           PROJ_PATH=$(find braviaremote-ios -name "*.xcodeproj" | head -n 1)
           SCHEME_NAME=$(xcodebuild -list -project "$PROJ_PATH" | grep -A 10 "Schemes:" | tail -n +2 | head -n 1 | xargs)
@@ -68,13 +75,10 @@ jobs:
             -scheme "$SCHEME_NAME" \
             -configuration Release \
             -sdk iphoneos \
-            CODE_SIGN_STYLE="Manual" \
-            CODE_SIGN_IDENTITY="iOS Development" \
+            CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            DEVELOPMENT_TEAM="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE_REQUIRED=NO
 
       - name: Package IPA Payload
         run: |
